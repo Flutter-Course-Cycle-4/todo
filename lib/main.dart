@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:todo/screens/home_screen.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -21,18 +22,33 @@ class MyApp extends StatelessWidget {
               primaryVariant: Colors.white,
               secondaryVariant: Color(0xFF61E757),
             ),
+        textTheme: TextTheme(
+          headline1: TextStyle(
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
       darkTheme: ThemeData(
         primaryColor: Color(0xFF5D9CEC),
-        scaffoldBackgroundColor: Color(0xFFDFECDB),
+        scaffoldBackgroundColor: Color(0xFF060E1E),
         colorScheme: Theme.of(context).colorScheme.copyWith(
               secondary: Color(0xFF141922),
               primaryVariant: Color(0xFF060E1E),
               secondaryVariant: Color(0xFF61E757),
             ),
+        textTheme: TextTheme(
+          headline1: TextStyle(
+            color: Color(0xFF060E1E),
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
+      themeMode: ThemeMode.light,
       home: HomeScreen(),
-      locale: Locale('ar'),
+      locale: Locale('en'),
     );
   }
 }
