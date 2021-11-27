@@ -1,7 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:todo/views/screens/settings_screen.dart';
+import 'package:todo/views/screens/tasks_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int currentScreenIndex = 0;
+
+  List screens = [
+    TasksScreen(),
+    SettingsScreen(),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -25,16 +39,18 @@ class HomeScreen extends StatelessWidget {
         shape: CircularNotchedRectangle(),
         color: Theme.of(context).colorScheme.secondary,
         child: BottomNavigationBar(
+          onTap: (value) {
+            setState(() {
+              currentScreenIndex = value;
+            });
+          },
           backgroundColor: Theme.of(context).colorScheme.secondary,
           elevation: 0,
           showSelectedLabels: false,
           showUnselectedLabels: false,
-          selectedIconTheme: IconThemeData(
-            color: Theme.of(context).primaryColor,
-          ),
-          unselectedIconTheme: IconThemeData(
-            color: Colors.grey,
-          ),
+          selectedItemColor: Theme.of(context).primaryColor,
+          unselectedItemColor: Colors.grey,
+          currentIndex: currentScreenIndex,
           items: [
             BottomNavigationBarItem(icon: Icon(Icons.list), label: ''),
             BottomNavigationBarItem(
@@ -42,6 +58,7 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
+      body: screens[currentScreenIndex],
     );
   }
 }
