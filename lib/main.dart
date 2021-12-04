@@ -1,14 +1,21 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:todo/controllers/settings_provider.dart';
+import 'package:todo/controllers/tasks_provider.dart';
 import 'package:todo/views/screens/home_screen.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => SettingsProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => SettingsProvider()),
+        ChangeNotifierProvider(create: (context) => TasksProvider()),
+      ],
       child: MyApp(),
     ),
   );
