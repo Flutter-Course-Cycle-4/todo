@@ -2,12 +2,55 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:todo/controllers/tasks_provider.dart';
 import 'package:todo/models/task.dart';
 
-class TaskItem extends StatelessWidget {
+class TaskItem extends StatefulWidget {
   final Task task;
 
   TaskItem(this.task);
+
+  @override
+  State<TaskItem> createState() => _TaskItemState();
+}
+
+class _TaskItemState extends State<TaskItem> {
+  bool isDeleting = false, isUpdating = false;
+
+  void showError(String title, String body) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(body),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text('Ok'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void updateTaskStatus() async {
+    setState(() {
+      isUpdating = true;
+    });
+    String? error = await Provider.of<TasksProvider>(context, listen: false)
+        .updateTaskStatus(widget.task);
+    setState(() {
+      isUpdating = false;
+    });
+    if (error != null) {
+      showError('Status update failed', error);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,24 +66,43 @@ class TaskItem extends StatelessWidget {
           motion: BehindMotion(),
           children: [
             Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: Colors.red,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.delete,
-                      color: Colors.white,
-                      size: 30,
-                    ),
-                    Text(
-                      AppLocalizations.of(context)!.delete_btn,
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ],
+              child: InkWell(
+                onTap: () async {
+                  setState(() {
+                    isDeleting = true;
+                  });
+                  String? error =
+                      await Provider.of<TasksProvider>(context, listen: false)
+                          .deleteTask(widget.task);
+                  if (error != null) {
+                    showError('Deleting Task Failed', error);
+                  }
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.red,
+                  ),
+                  child: isDeleting
+                      ? Center(
+                          child: CircularProgressIndicator.adaptive(
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
+                        ))
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.delete,
+                              color: Colors.white,
+                              size: 30,
+                            ),
+                            Text(
+                              AppLocalizations.of(context)!.delete_btn,
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ],
+                        ),
                 ),
               ),
             ),
@@ -57,13 +119,16 @@ class TaskItem extends StatelessWidget {
             horizontalTitleGap: 0,
             leading: VerticalDivider(
               thickness: 4,
-              color: task.done ? Colors.green : Theme.of(context).primaryColor,
+              color: widget.task.done
+                  ? Colors.green
+                  : Theme.of(context).primaryColor,
             ),
             title: Text(
-              task.title,
+              widget.task.title,
               style: TextStyle(
-                color:
-                    task.done ? Colors.green : Theme.of(context).primaryColor,
+                color: widget.task.done
+                    ? Colors.green
+                    : Theme.of(context).primaryColor,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -75,31 +140,37 @@ class TaskItem extends StatelessWidget {
                     Icons.timer,
                     size: 14,
                   ),
-                  Text(DateFormat('hh:mm a').format(task.dateTime)),
+                  Text(DateFormat('hh:mm a').format(widget.task.dateTime)),
                 ],
               ),
             ),
-            trailing: (task.done)
-                ? Text(
-                    'Done!',
-                    style: TextStyle(color: Colors.green, fontSize: 20),
-                  )
-                : ElevatedButton(
-                    style: ButtonStyle(
-                      backgroundColor: MaterialStateProperty.all<Color>(
-                        task.done
-                            ? Colors.green
-                            : Theme.of(context).primaryColor,
-                      ),
-                      shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                        RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+            trailing: (isUpdating)
+                ? CircularProgressIndicator.adaptive()
+                : (widget.task.done)
+                    ? TextButton(
+                        onPressed: updateTaskStatus,
+                        child: Text(
+                          'Done!',
+                          style: TextStyle(color: Colors.green, fontSize: 20),
                         ),
+                      )
+                    : ElevatedButton(
+                        style: ButtonStyle(
+                          backgroundColor: MaterialStateProperty.all<Color>(
+                            widget.task.done
+                                ? Colors.green
+                                : Theme.of(context).primaryColor,
+                          ),
+                          shape:
+                              MaterialStateProperty.all<RoundedRectangleBorder>(
+                            RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                        onPressed: updateTaskStatus,
+                        child: Icon(Icons.check),
                       ),
-                    ),
-                    onPressed: () {},
-                    child: Icon(Icons.check),
-                  ),
           ),
         ),
       ),

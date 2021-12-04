@@ -29,7 +29,6 @@ class _TasksScreenState extends State<TasksScreen> {
             setState(() {
               selectedDay = sd;
             });
-            print(selectedDay);
           },
           weekendDays: [],
           selectedDayPredicate: (day) {
@@ -61,13 +60,27 @@ class _TasksScreenState extends State<TasksScreen> {
           ),
         ),
         Expanded(
-          child: ListView.builder(
-            padding: EdgeInsets.symmetric(vertical: 15, horizontal: 30),
-            itemCount: Provider.of<TasksProvider>(context).tasks.length,
-            itemBuilder: (context, index) {
-              return TaskItem(Provider.of<TasksProvider>(context).tasks[index]);
-            },
-          ),
+          child: FutureBuilder<String?>(
+              future: Provider.of<TasksProvider>(context, listen: false)
+                  .getTasks(selectedDay),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator.adaptive());
+                } else if (snapshot.data == null) {
+                  return ListView.builder(
+                    padding: EdgeInsets.symmetric(vertical: 15, horizontal: 30),
+                    itemCount: Provider.of<TasksProvider>(context).tasks.length,
+                    itemBuilder: (context, index) {
+                      return TaskItem(
+                          Provider.of<TasksProvider>(context).tasks[index]);
+                    },
+                  );
+                } else {
+                  return Center(
+                    child: Text(snapshot.data!),
+                  );
+                }
+              }),
         )
       ],
     );

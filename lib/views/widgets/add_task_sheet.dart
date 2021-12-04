@@ -16,6 +16,7 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
   TextEditingController titleController = TextEditingController();
   late DateTime selectedDate;
   late TimeOfDay selectedTime;
+  bool isAdding = false;
 
   @override
   void initState() {
@@ -40,6 +41,26 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
     );
   }
 
+  void showError(String title, String body) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(body),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text('Ok'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -54,6 +75,7 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
           children: [
             SheetLabel(AppLocalizations.of(context)!.add_task_title),
             TextField(
+              enabled: !isAdding,
               controller: titleController,
               decoration: InputDecoration(
                 floatingLabelBehavior: FloatingLabelBehavior.always,
@@ -70,18 +92,21 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton(
-                  onPressed: () async {
-                    DateTime? pickedDate = await showDatePicker(
-                      context: context,
-                      initialDate: selectedDate,
-                      firstDate: DateTime.now().subtract(Duration(days: 365)),
-                      lastDate: DateTime.now().add(Duration(days: 365)),
-                    );
-                    if (pickedDate != null) {
-                      selectedDate = pickedDate;
-                      setState(() {});
-                    }
-                  },
+                  onPressed: isAdding
+                      ? null
+                      : () async {
+                          DateTime? pickedDate = await showDatePicker(
+                            context: context,
+                            initialDate: selectedDate,
+                            firstDate:
+                                DateTime.now().subtract(Duration(days: 365)),
+                            lastDate: DateTime.now().add(Duration(days: 365)),
+                          );
+                          if (pickedDate != null) {
+                            selectedDate = pickedDate;
+                            setState(() {});
+                          }
+                        },
                   child: Text(
                     DateFormat('dd/MM/yyyy').format(selectedDate),
                   ),
@@ -90,16 +115,18 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                   width: 10,
                 ),
                 ElevatedButton(
-                  onPressed: () async {
-                    TimeOfDay? pickedTime = await showTimePicker(
-                      context: context,
-                      initialTime: selectedTime,
-                    );
-                    if (pickedTime != null) {
-                      selectedTime = pickedTime;
-                      setState(() {});
-                    }
-                  },
+                  onPressed: isAdding
+                      ? null
+                      : () async {
+                          TimeOfDay? pickedTime = await showTimePicker(
+                            context: context,
+                            initialTime: selectedTime,
+                          );
+                          if (pickedTime != null) {
+                            selectedTime = pickedTime;
+                            setState(() {});
+                          }
+                        },
                   child: Text(
                     DateFormat('hh:mm a').format(combineDateAndTime()),
                   ),
@@ -111,49 +138,55 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  onPressed: () {
-                    // Navigator.of(context).pop();
-                    Navigator.pop(context);
-                  },
+                  onPressed: isAdding
+                      ? null
+                      : () {
+                          // Navigator.of(context).pop();
+                          Navigator.pop(context);
+                        },
                   child: Text(
                     AppLocalizations.of(context)!.cancel_btn,
                     style: TextStyle(color: Colors.red),
                   ),
                 ),
                 SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: () {
-                    if (titleController.text.isEmpty) {
-                      print('hello');
-                      showDialog(
-                        context: context,
-                        builder: (context) {
-                          return AlertDialog(
-                            title: Text('Missing Data'),
-                            content: Text('Please provide a title to the task'),
-                            actions: [
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                },
-                                child: Text('Ok'),
-                              ),
-                            ],
-                          );
+                isAdding
+                    ? CircularProgressIndicator.adaptive()
+                    : ElevatedButton(
+                        onPressed: () async {
+                          if (titleController.text.isEmpty) {
+                            print('hello');
+                            showError('Missing Data',
+                                'Please provide a title to the task');
+                          } else {
+                            String newId = Provider.of<TasksProvider>(context,
+                                    listen: false)
+                                .getNewId;
+                            Task newTask = Task(newId, titleController.text,
+                                combineDateAndTime());
+
+                            setState(() {
+                              isAdding = true;
+                            });
+                            String? error = await Provider.of<TasksProvider>(
+                                    context,
+                                    listen: false)
+                                .addTask(newTask);
+
+                            if (error == null) {
+                              Navigator.pop(context);
+                            } else {
+                              setState(() {
+                                isAdding = false;
+                              });
+                              showError('Adding Task Failed', error);
+                            }
+                          }
                         },
-                      );
-                    } else {
-                      Task newTask =
-                          Task(titleController.text, combineDateAndTime());
-                      Provider.of<TasksProvider>(context, listen: false)
-                          .addTask(newTask);
-                      Navigator.pop(context);
-                    }
-                  },
-                  child: Text(
-                    AppLocalizations.of(context)!.add_btn,
-                  ),
-                ),
+                        child: Text(
+                          AppLocalizations.of(context)!.add_btn,
+                        ),
+                      ),
               ],
             )
           ],
